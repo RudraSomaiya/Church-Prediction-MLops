@@ -55,23 +55,38 @@ def tune_threshold(
     y_true: np.ndarray,
     thresholds: np.ndarray,
     min_precision: float,
+    primary_metric: str = "recall",
 ) -> tuple[float, dict]:
     """
-    Find the threshold that maximises recall while keeping precision
+    Find the threshold that maximises the primary_metric while keeping precision
     above min_precision.
 
     Returns (best_threshold, metrics_at_best_threshold).
     """
     best_threshold = 0.5
-    best_recall = 0.0
+    best_score = -1.0
     best_metrics = {}
 
     for t in thresholds:
         y_pred = (y_prob >= t).astype(int)
         rec  = recall_score(y_true, y_pred, zero_division=0)
         prec = precision_score(y_true, y_pred, zero_division=0)
-        if prec >= min_precision and rec > best_recall:
-            best_recall = rec
+        f1   = f1_score(y_true, y_pred, zero_division=0)
+        auc  = roc_auc_score(y_true, y_prob)
+        acc  = accuracy_score(y_true, y_pred)
+        
+        # Decide which score to maximize
+        if primary_metric == "f1":
+            score = f1
+        elif primary_metric == "roc_auc":
+            score = auc
+        elif primary_metric == "precision":
+            score = prec
+        else:
+            score = rec
+
+        if prec >= min_precision and score > best_score:
+            best_score = score
             best_threshold = t
             best_metrics = {
                 "threshold": float(t),
@@ -197,9 +212,12 @@ def run(params: dict | None = None) -> None:
     t_params  = params["threshold"]
     thresholds = np.arange(t_params["start"], t_params["stop"], t_params["step"])
     min_prec   = t_params["min_precision"]
+    primary_metric = t_params.get("primary_metric", "recall")
 
     y_prob = model.predict_proba(X_test)[:, 1]
-    best_threshold, tuned_metrics = tune_threshold(y_prob, y_test, thresholds, min_prec)
+    best_threshold, tuned_metrics = tune_threshold(
+        y_prob, y_test, thresholds, min_prec, primary_metric=primary_metric
+    )
 
     print(f"\nThreshold tuning results:")
     print(f"  Selected threshold: {best_threshold:.2f}")
@@ -244,7 +262,7 @@ def run(params: dict | None = None) -> None:
     with mlflow.start_run(run_id=best_run_id):
         mlflow.log_param("selected_threshold", best_threshold)
         mlflow.log_param("threshold_selection_criterion",
-                         f"max recall subject to precision >= {min_prec}")
+                         f"max {primary_metric} subject to precision >= {min_prec}")
 
         for metric_name, value in tuned_metrics.items():
             if isinstance(value, float):

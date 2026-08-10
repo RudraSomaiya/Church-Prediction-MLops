@@ -1,0 +1,238 @@
+schema: '2.0'
+stages:
+  preprocess:
+    cmd: python src/data/preprocess.py
+    deps:
+    - path: data/raw/customer_churn_test.csv
+      hash: md5
+      md5: 55289b95d9b4310f554778c725097c5b
+      size: 3282220
+    - path: data/raw/customer_churn_train.csv
+      hash: md5
+      md5: a8d02f389b1e2a894b1decc4dfb658be
+      size: 23448754
+    - path: params.yaml
+      hash: md5
+      md5: 1b48d166bbb8dcda2196b58c7f98aff3
+      size: 1038
+    - path: src/data/preprocess.py
+      hash: md5
+      md5: 0973df7f3ae15385a04a5cb6c5159405
+      size: 8791
+    params:
+      params.yaml:
+        data:
+          raw_train: data/raw/customer_churn_train.csv
+          raw_test: data/raw/customer_churn_test.csv
+          processed_dir: data/processed
+          test_size: 0.2
+          random_state: 42
+          target_column: Churn
+          id_column: CustomerID
+        smote:
+          random_state: 42
+          k_neighbors: 5
+    outs:
+    - path: data/processed/X_test.npy
+      hash: md5
+      md5: 465e6bca91ffa741504e06acef742861
+      size: 5150048
+    - path: data/processed/X_train.npy
+      hash: md5
+      md5: bfb56b17d016f6912aceb1a6cc66b742
+      size: 31999968
+    - path: data/processed/X_val.npy
+      hash: md5
+      md5: c01c126abc41d7834b21ce0282da14e8
+      size: 7053488
+    - path: data/processed/feature_names.csv
+      hash: md5
+      md5: 03caf60d7a91d77bad5c8ea01a53c40f
+      size: 138
+    - path: data/processed/label_encoders.pkl
+      hash: md5
+      md5: cd295af8bce7f64d4399f1ed74edf569
+      size: 1018
+    - path: data/processed/scaler.pkl
+      hash: md5
+      md5: e220209402085ff1c04f7d8ce9c89b16
+      size: 1119
+    - path: data/processed/y_test.npy
+      hash: md5
+      md5: 8fdee612952de35a8c7ac360738d0b85
+      size: 515120
+    - path: data/processed/y_train.npy
+      hash: md5
+      md5: 5df461d1b9dd098408daf4d21009c506
+      size: 3200112
+    - path: data/processed/y_val.npy
+      hash: md5
+      md5: c41012d3689eeaa1022f94fd2ad4d5db
+      size: 705464
+  train:
+    cmd: python src/models/train.py
+    deps:
+    - path: data/processed/X_train.npy
+      hash: md5
+      md5: bfb56b17d016f6912aceb1a6cc66b742
+      size: 31999968
+    - path: data/processed/X_val.npy
+      hash: md5
+      md5: c01c126abc41d7834b21ce0282da14e8
+      size: 7053488
+    - path: data/processed/y_train.npy
+      hash: md5
+      md5: 5df461d1b9dd098408daf4d21009c506
+      size: 3200112
+    - path: data/processed/y_val.npy
+      hash: md5
+      md5: c41012d3689eeaa1022f94fd2ad4d5db
+      size: 705464
+    - path: params.yaml
+      hash: md5
+      md5: 1b48d166bbb8dcda2196b58c7f98aff3
+      size: 1038
+    - path: src/models/train.py
+      hash: md5
+      md5: 15ec9f765def352328eb4e1d32fe230a
+      size: 7811
+    params:
+      params.yaml:
+        gridsearch:
+          cv: 5
+          scoring: roc_auc
+          n_jobs: -1
+          refit: true
+        models:
+          logistic_regression:
+            C:
+            - 0.01
+            - 0.1
+            - 1.0
+            - 10.0
+            max_iter:
+            - 500
+            solver:
+            - lbfgs
+            class_weight:
+            - balanced
+          random_forest:
+            n_estimators:
+            - 100
+            max_depth:
+            - 5
+            - 10
+            min_samples_split:
+            - 10
+            - 50
+            class_weight:
+            - balanced
+          gradient_boosting:
+            n_estimators:
+            - 100
+            learning_rate:
+            - 0.05
+            - 0.1
+            max_depth:
+            - 3
+            - 5
+            subsample:
+            - 0.8
+            - 1.0
+    outs:
+    - path: data/processed/best_model_name.txt
+      hash: md5
+      md5: 1a2339ba2eebc20fd11fb5147350cfcf
+      size: 17
+    - path: data/processed/best_model_path.txt
+      hash: md5
+      md5: 9a93326d5f19d5a34b7f4a55d6a79b56
+      size: 95
+    - path: data/processed/best_run_id.txt
+      hash: md5
+      md5: 906561c4256eaefce7c9d342e4fad7b4
+      size: 32
+    - path: data/processed/models/gradient_boosting.pkl
+      hash: md5
+      md5: 823489b65e012bb8ada9889f21c0569c
+      size: 450536
+    - path: data/processed/models/logistic_regression.pkl
+      hash: md5
+      md5: 80ab503d16a17c6eb16deb1e9898fbdb
+      size: 959
+    - path: data/processed/models/random_forest.pkl
+      hash: md5
+      md5: eba357d415ff86339a41188b9b58510d
+      size: 1479353
+  evaluate:
+    cmd: python src/models/evaluate.py
+    deps:
+    - path: data/processed/X_test.npy
+      hash: md5
+      md5: 465e6bca91ffa741504e06acef742861
+      size: 5150048
+    - path: data/processed/best_model_name.txt
+      hash: md5
+      md5: 1a2339ba2eebc20fd11fb5147350cfcf
+      size: 17
+    - path: data/processed/best_model_path.txt
+      hash: md5
+      md5: 9a93326d5f19d5a34b7f4a55d6a79b56
+      size: 95
+    - path: data/processed/best_run_id.txt
+      hash: md5
+      md5: 906561c4256eaefce7c9d342e4fad7b4
+      size: 32
+    - path: data/processed/models/gradient_boosting.pkl
+      hash: md5
+      md5: 823489b65e012bb8ada9889f21c0569c
+      size: 450536
+    - path: data/processed/models/logistic_regression.pkl
+      hash: md5
+      md5: 80ab503d16a17c6eb16deb1e9898fbdb
+      size: 959
+    - path: data/processed/models/random_forest.pkl
+      hash: md5
+      md5: eba357d415ff86339a41188b9b58510d
+      size: 1479353
+    - path: data/processed/y_test.npy
+      hash: md5
+      md5: 8fdee612952de35a8c7ac360738d0b85
+      size: 515120
+    - path: params.yaml
+      hash: md5
+      md5: 1b48d166bbb8dcda2196b58c7f98aff3
+      size: 1038
+    - path: src/models/evaluate.py
+      hash: md5
+      md5: bc63fae9832be9bc209b32859834eb8e
+      size: 10767
+    params:
+      params.yaml:
+        threshold:
+          start: 0.2
+          stop: 0.8
+          step: 0.01
+          primary_metric: f1
+          min_precision: 0.5
+    outs:
+    - path: data/processed/evaluation_summary.json
+      hash: md5
+      md5: 7b4ed72ab0634bcdcc907ebc4d769faa
+      size: 296
+    - path: data/processed/reports/classification_report.txt
+      hash: md5
+      md5: f65ff35d55df0b5a98789ac1696b6383
+      size: 334
+    - path: data/processed/reports/confusion_matrix.png
+      hash: md5
+      md5: 936d9327e2621946012a2c51a1a4e639
+      size: 37918
+    - path: data/processed/reports/roc_curve.png
+      hash: md5
+      md5: 498269e8d4751d2e37121ff26aad8be6
+      size: 49911
+    - path: data/processed/reports/threshold_sweep.png
+      hash: md5
+      md5: aef7efc3244de1330f42a9443de5a2b6
+      size: 33703
