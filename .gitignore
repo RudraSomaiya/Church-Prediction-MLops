@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+.python-version
+
+# Data files (DVC manages these)
+data/raw/*.csv
+data/processed/*.csv
+data/processed/*.parquet
+
+# MLflow tracking
+mlruns/
+mlartifacts/
+
+# DVC cache
+.dvc/cache/
+.dvc/tmp/
+
+# Credentials - NEVER commit these
+kaggle.json
+.env
+*.env
+secrets/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Pytest
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Jupyter
+.ipynb_checkpoints/

@@ -1,0 +1,30 @@
+# Core data science
+numpy==2.2.6
+pandas==2.2.3
+scikit-learn==1.6.1
+pathspec==0.11.2
+imbalanced-learn==0.13.0
+xgboost==3.0.2
+
+# Pipeline and versioning
+dvc==3.59.1
+
+# Experiment tracking
+mlflow==2.22.0
+
+# Visualisation
+matplotlib==3.10.3
+seaborn==0.13.2
+
+# Configuration
+pyyaml==6.0.2
+
+# Serialisation
+joblib==1.5.1
+
+# Testing
+pytest==8.3.5
+pytest-cov==6.1.0
+
+# Utilities
+tqdm==4.67.1

@@ -1,0 +1,58 @@
+# Data pipeline parameters
+data:
+  raw_train: data/raw/customer_churn_train.csv
+  raw_test: data/raw/customer_churn_test.csv
+  processed_dir: data/processed
+  test_size: 0.2
+  random_state: 42
+  target_column: Churn
+  id_column: CustomerID
+
+# SMOTE parameters
+smote:
+  random_state: 42
+  k_neighbors: 5
+
+# Model hyperparameter grids for GridSearchCV
+models:
+  logistic_regression:
+    C: [0.01, 0.1, 1.0, 10.0]
+    max_iter: [500]
+    solver: [lbfgs]
+    class_weight: [balanced]
+
+  random_forest:
+    n_estimators: [100, 200]
+    max_depth: [10, 20, null]
+    min_samples_split: [2, 5]
+    class_weight: [balanced]
+
+  gradient_boosting:
+    n_estimators: [100, 200]
+    learning_rate: [0.05, 0.1]
+    max_depth: [3, 5]
+    subsample: [0.8, 1.0]
+
+# GridSearchCV settings
+gridsearch:
+  cv: 5
+  scoring: recall
+  n_jobs: -1
+  refit: true
+
+# Threshold tuning
+threshold:
+  start: 0.2
+  stop: 0.8
+  step: 0.01
+  primary_metric: recall
+  min_precision: 0.30
+
+# Evaluation
+evaluation:
+  metrics:
+    - recall
+    - precision
+    - f1
+    - roc_auc
+    - accuracy

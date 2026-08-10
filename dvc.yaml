@@ -1,0 +1,66 @@
+stages:
+  preprocess:
+    cmd: python src/data/preprocess.py
+    deps:
+      - src/data/preprocess.py
+      - data/raw/customer_churn_train.csv
+      - data/raw/customer_churn_test.csv
+      - params.yaml
+    params:
+      - params.yaml:
+          - data
+          - smote
+    outs:
+      - data/processed/X_train.npy
+      - data/processed/y_train.npy
+      - data/processed/X_val.npy
+      - data/processed/y_val.npy
+      - data/processed/X_test.npy
+      - data/processed/y_test.npy
+      - data/processed/feature_names.csv
+      - data/processed/label_encoders.pkl
+      - data/processed/scaler.pkl
+
+  train:
+    cmd: python src/models/train.py
+    deps:
+      - src/models/train.py
+      - data/processed/X_train.npy
+      - data/processed/y_train.npy
+      - data/processed/X_val.npy
+      - data/processed/y_val.npy
+      - params.yaml
+    params:
+      - params.yaml:
+          - models
+          - gridsearch
+    outs:
+      - data/processed/models/logistic_regression.pkl
+      - data/processed/models/random_forest.pkl
+      - data/processed/models/gradient_boosting.pkl
+      - data/processed/best_model_path.txt
+      - data/processed/best_model_name.txt
+      - data/processed/best_run_id.txt
+
+  evaluate:
+    cmd: python src/models/evaluate.py
+    deps:
+      - src/models/evaluate.py
+      - data/processed/best_model_path.txt
+      - data/processed/best_model_name.txt
+      - data/processed/best_run_id.txt
+      - data/processed/X_test.npy
+      - data/processed/y_test.npy
+      - data/processed/models/logistic_regression.pkl
+      - data/processed/models/random_forest.pkl
+      - data/processed/models/gradient_boosting.pkl
+      - params.yaml
+    params:
+      - params.yaml:
+          - threshold
+    outs:
+      - data/processed/reports/confusion_matrix.png
+      - data/processed/reports/roc_curve.png
+      - data/processed/reports/threshold_sweep.png
+      - data/processed/reports/classification_report.txt
+      - data/processed/evaluation_summary.json
