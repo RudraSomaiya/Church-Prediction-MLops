@@ -238,7 +238,7 @@ def run(params: dict | None = None) -> None:
     # ------------------------------------------------------------------
     # Log everything to MLflow (resuming the best model's run)
     # ------------------------------------------------------------------
-    mlflow.set_tracking_uri(str(ROOT / "mlruns"))
+    mlflow.set_tracking_uri((ROOT / "mlruns").as_uri())
     mlflow.set_experiment("customer_churn_training")
 
     with mlflow.start_run(run_id=best_run_id):

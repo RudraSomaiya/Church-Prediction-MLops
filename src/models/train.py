@@ -159,7 +159,9 @@ def run(params: dict | None = None) -> None:
 
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
-    mlflow.set_tracking_uri(str(ROOT / "mlruns"))
+    mlruns_dir = ROOT / "mlruns"
+    mlruns_dir.mkdir(exist_ok=True)
+    mlflow.set_tracking_uri((mlruns_dir).as_uri())
     experiment_name = "customer_churn_training"
     mlflow.set_experiment(experiment_name)
 
