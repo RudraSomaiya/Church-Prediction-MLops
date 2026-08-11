@@ -2,13 +2,13 @@
 
 ## Project Overview
 
-Customer churn is when a subscriber cancels or stops using a service. Predicting churn before it happens lets a business intervene early with a retention offer, which is far cheaper than acquiring a replacement customer. This project builds a production-style machine learning pipeline that predicts whether a customer will churn, using a dataset of 440,000+ customer records.
+Customer churn is when a subscriber cancels or stops using a service.
 
 The pipeline is built to MLOps standards: all data is version-controlled with DVC, all experiments are tracked with MLflow, the code is tested with Pytest, and continuous integration via GitHub Actions runs the test suite on every push.
 
-**Primary metrics: ROC-AUC for training, F1 for threshold tuning.** While recall is important for churn, optimizing purely for recall leads to degenerate models (predicting churn for everyone). The pipeline trains using ROC-AUC to ensure high overall discriminatory power, and tunes the decision threshold using the F1 score to perfectly balance precision and recall on the imbalanced dataset.
+**Primary metrics: ROC-AUC for training, F1 for threshold tuning.** 
 
-**Assignment:** Vijaybhoomi University, MLOps, STDE 301, August 2026 Mid Term.
+**Assignment:** MLOps, STDE 301, August 2026 Mid Term.
 
 ---
 
@@ -85,7 +85,7 @@ uv pip install -r requirements.txt
 
 ## Dataset Setup
 
-The raw dataset is the Kaggle "Customer Churn Dataset" by Muhammad Shahid Azeem:
+The raw dataset is the Kaggle "Customer Churn Dataset"
 https://www.kaggle.com/datasets/muhammadshahidazeem/customer-churn-dataset
 
 The two CSV files (`customer_churn_train.csv` and `customer_churn_test.csv`) live in `data/raw/` and are tracked by DVC, not by Git.
@@ -96,31 +96,7 @@ The two CSV files (`customer_churn_train.csv` and `customer_churn_test.csv`) liv
 dvc pull
 ```
 
-**If you need to download the data manually:**
-
-Place both CSV files in `data/raw/` with the names above. Then run the validation script:
-
-```bash
-python src/data/download_data.py
-```
-
-**If you want to re-download from Kaggle via the API:**
-
-Set your credentials as environment variables (do not hardcode them):
-
-```bash
-export KAGGLE_USERNAME=your_username
-export KAGGLE_KEY=your_api_key
-```
-
-Then uncomment the Kaggle API section in `src/data/download_data.py` and run it.
-The `kaggle.json` file itself must never be committed (it is in `.gitignore`).
-
----
-
 ## DVC Configuration
-
-This project uses a local DVC remote stored in a `dvc_storage/` directory one level above the project root (so it is outside the Git repository). This is the default for local development.
 
 **To set up the remote on a fresh clone:**
 
@@ -165,8 +141,6 @@ To run a specific stage only:
 dvc repro preprocess
 ```
 
-All tunable parameters (test split ratio, SMOTE settings, model hyperparameters, classification threshold range) are in `params.yaml`. Edit that file and run `dvc repro` to re-run only the affected downstream stages.
-
 ---
 
 ## Viewing MLflow Results
@@ -180,8 +154,6 @@ mlflow ui
 ```
 
 Then open your browser at: http://localhost:5000
-
-The tracking directory is `mlruns/` in the project root. It is excluded from Git via `.gitignore` because it can grow large, but it is not DVC-tracked either since it is a local experiment log.
 
 ---
 
@@ -219,19 +191,7 @@ The workflow file is at `.github/workflows/ci.yml`. It:
 5. Runs `pytest tests/ -v --tb=short`.
 6. Fails the build if any test fails.
 
-DVC data is not pulled in CI because the tests use synthetic data and do not need the real dataset. If you add integration tests that require real data, configure a DVC remote in CI using repository secrets.
-
----
-
-## Preprocessing Details
-
-**Why these choices:**
-
-- `CustomerID` is dropped because it is an arbitrary identifier with no predictive signal.
-- The single null row per column (12 nulls total across 440k rows) is dropped rather than imputed, because the volume is negligible.
-- Categorical columns (`Gender`, `Subscription Type`, `Contract Length`) are label-encoded rather than one-hot encoded. Tree-based models handle ordinal integer codes well, and it keeps the feature space compact.
-- Numeric columns are standardised with `StandardScaler` so that Logistic Regression converges, and the same preprocessed arrays are reused for all three models.
-- SMOTE is applied only to the training split after the stratified train/validation split. Applying it before the split would cause data leakage, because synthetic minority samples could appear in both splits.
+DVC data is not pulled in CI because the tests use synthetic data and do not need the real dataset.
 
 ---
 
@@ -249,20 +209,6 @@ Three classifiers are trained and compared:
 
 Optimizing purely for recall can lead to degenerate models that simply predict churn for every customer. To prevent overfitting and ensure the model is genuinely learning the underlying patterns, the `GridSearchCV` hyperparameter tuning phase optimizes for **ROC-AUC**. This ensures the model selects parameters that yield the highest overall ability to separate churners from non-churners.
 
-For the final decision boundary, the evaluation stage uses the **F1 Score** as the primary metric, which provides the harmonic mean of precision and recall. A minimum precision floor (configurable in `params.yaml` under `threshold.min_precision`) is also enforced to guarantee the predictions remain operationally actionable.
-
-**Threshold tuning:**
-
-Rather than using the default 0.5 cutoff, the evaluate stage sweeps thresholds from 0.20 to 0.80 in steps of 0.01. The threshold that gives the highest F1 score while keeping precision at or above the minimum floor is selected. A chart of recall, precision, and F1 across all thresholds is saved to `data/processed/reports/threshold_sweep.png` and logged to MLflow.
-
-**Class imbalance:**
-
-SMOTE (Synthetic Minority Over-sampling Technique) is applied to the training data. The training set has roughly 57% churners vs 43% non-churners, which is a mild imbalance, but SMOTE is used to bring it to a 50/50 split to prevent the model from being biased toward the majority class. `class_weight='balanced'` is also set on Logistic Regression and Random Forest as a secondary guard.
-
-**Model selection:**
-
-The best model is selected by validation ROC-AUC at the default threshold during training. The final evaluation is then performed on the held-out test set with the tuned threshold. The evaluation summary, including the selected model name, threshold, and all test metrics, is saved to `data/processed/evaluation_summary.json`.
-
 ---
 
 ## Reproducibility
@@ -276,11 +222,3 @@ uv pip install -r requirements.txt
 dvc pull
 dvc repro
 ```
-
-Reproducibility is guaranteed by:
-
-- Pinned dependency versions in `requirements.txt`.
-- All random seeds set via `params.yaml` (`data.random_state` and `smote.random_state`).
-- GridSearchCV and model constructors receive `random_state=42` explicitly.
-- DVC tracks data file hashes and reruns only changed stages.
-- All hyperparameters and threshold values are in `params.yaml`, not in source code.
