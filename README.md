@@ -6,7 +6,7 @@ Customer churn is when a subscriber cancels or stops using a service. Predicting
 
 The pipeline is built to MLOps standards: all data is version-controlled with DVC, all experiments are tracked with MLflow, the code is tested with Pytest, and continuous integration via GitHub Actions runs the test suite on every push.
 
-**Primary metric: Recall on the churn class.** Missing a churner who then leaves is more costly than incorrectly flagging a loyal customer. The pipeline is explicitly optimised for recall, with precision held above a minimum floor to keep predictions actionable.
+**Primary metrics: ROC-AUC for training, F1 for threshold tuning.** While recall is important for churn, optimizing purely for recall leads to degenerate models (predicting churn for everyone). The pipeline trains using ROC-AUC to ensure high overall discriminatory power, and tunes the decision threshold using the F1 score to perfectly balance precision and recall on the imbalanced dataset.
 
 **Assignment:** Vijaybhoomi University, MLOps, STDE 301, August 2026 Mid Term.
 
@@ -245,13 +245,15 @@ Three classifiers are trained and compared:
 | Random Forest | Non-linear ensemble, robust to feature scale |
 | Gradient Boosting | Boosted trees, typically strongest on tabular data |
 
-**Why recall is the primary metric:**
+**Why ROC-AUC and F1 are the primary metrics:**
 
-A churner who is not flagged leaves with no intervention. A loyal customer who is incorrectly flagged receives a retention offer, which is a minor cost. The asymmetry makes recall far more important than precision. The pipeline selects the model and decision threshold that maximise recall on the held-out test set, subject to precision staying above 0.30 (configurable in `params.yaml` under `threshold.min_precision`). This floor prevents the degenerate solution of predicting churn for every customer.
+Optimizing purely for recall can lead to degenerate models that simply predict churn for every customer. To prevent overfitting and ensure the model is genuinely learning the underlying patterns, the `GridSearchCV` hyperparameter tuning phase optimizes for **ROC-AUC**. This ensures the model selects parameters that yield the highest overall ability to separate churners from non-churners.
+
+For the final decision boundary, the evaluation stage uses the **F1 Score** as the primary metric, which provides the harmonic mean of precision and recall. A minimum precision floor (configurable in `params.yaml` under `threshold.min_precision`) is also enforced to guarantee the predictions remain operationally actionable.
 
 **Threshold tuning:**
 
-Rather than using the default 0.5 cutoff, the evaluate stage sweeps thresholds from 0.20 to 0.80 in steps of 0.01. The threshold that gives the highest recall while keeping precision at or above the minimum floor is selected. A chart of recall, precision, and F1 across all thresholds is saved to `data/processed/reports/threshold_sweep.png` and logged to MLflow.
+Rather than using the default 0.5 cutoff, the evaluate stage sweeps thresholds from 0.20 to 0.80 in steps of 0.01. The threshold that gives the highest F1 score while keeping precision at or above the minimum floor is selected. A chart of recall, precision, and F1 across all thresholds is saved to `data/processed/reports/threshold_sweep.png` and logged to MLflow.
 
 **Class imbalance:**
 
@@ -259,7 +261,7 @@ SMOTE (Synthetic Minority Over-sampling Technique) is applied to the training da
 
 **Model selection:**
 
-The best model is selected by validation recall at the default threshold during training. The final evaluation is then performed on the held-out test set with the tuned threshold. The evaluation summary, including the selected model name, threshold, and all test metrics, is saved to `data/processed/evaluation_summary.json`.
+The best model is selected by validation ROC-AUC at the default threshold during training. The final evaluation is then performed on the held-out test set with the tuned threshold. The evaluation summary, including the selected model name, threshold, and all test metrics, is saved to `data/processed/evaluation_summary.json`.
 
 ---
 
