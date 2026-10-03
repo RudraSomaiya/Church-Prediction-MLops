@@ -53,3 +53,7 @@ htmlcov/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Local documents and submission archives
+*.pdf
+*.zip
